@@ -1,0 +1,2403 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lingua Pro — Yapay Zeka Destekli Dil Öğrenme</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #04040a;
+  --bg2: #080812;
+  --surface: #0e0e1c;
+  --surface2: #161628;
+  --surface3: #1e1e36;
+  --border: #252540;
+  --border2: #2e2e52;
+  --gold: #c9a84c;
+  --gold2: #e8c96a;
+  --teal: #2dd4bf;
+  --teal2: #5eead4;
+  --rose: #fb7185;
+  --violet: #8b5cf6;
+  --text: #f4f0ff;
+  --text2: #a8a4c8;
+  --text3: #5a5880;
+  --radius: 18px;
+  --radius-sm: 10px;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* CUSTOM CURSOR */
+.cursor {
+  width: 12px; height: 12px;
+  background: var(--gold);
+  border-radius: 50%;
+  position: fixed;
+  pointer-events: none;
+  z-index: 99999;
+  transform: translate(-50%, -50%);
+  transition: transform 0.1s, width 0.2s, height 0.2s, background 0.2s;
+  mix-blend-mode: screen;
+}
+.cursor-ring {
+  width: 36px; height: 36px;
+  border: 1px solid rgba(201,168,76,0.4);
+  border-radius: 50%;
+  position: fixed;
+  pointer-events: none;
+  z-index: 99998;
+  transform: translate(-50%, -50%);
+  transition: all 0.15s ease-out;
+}
+
+/* NOISE OVERLAY */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9997;
+  opacity: 0.5;
+}
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* AMBIENT GLOW */
+.glow-1 {
+  position: fixed; top: -20%; left: -10%;
+  width: 60vw; height: 60vh;
+  background: radial-gradient(ellipse, rgba(139,92,246,0.06) 0%, transparent 70%);
+  pointer-events: none; z-index: 0;
+}
+.glow-2 {
+  position: fixed; bottom: -20%; right: -10%;
+  width: 50vw; height: 50vh;
+  background: radial-gradient(ellipse, rgba(45,212,191,0.05) 0%, transparent 70%);
+  pointer-events: none; z-index: 0;
+}
+
+/* ═══════════════════════════════════════
+   NAVBAR
+═══════════════════════════════════════ */
+.navbar {
+  position: fixed; top: 0; left: 0; right: 0;
+  z-index: 1000;
+  padding: 0 48px;
+  height: 72px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(4,4,10,0.8);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(37,37,64,0.6);
+  transition: all 0.3s;
+}
+.navbar.scrolled { background: rgba(4,4,10,0.95); }
+
+.nav-logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  display: flex; align-items: center; gap: 6px;
+}
+.nav-logo .accent { color: var(--gold); font-style: italic; }
+.logo-dot { width: 8px; height: 8px; background: var(--teal); border-radius: 50%; display: inline-block; animation: blink 2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.nav-links { display: flex; align-items: center; gap: 8px; }
+.nav-link {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text2);
+  text-decoration: none;
+  border-radius: 8px;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.nav-link:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+.nav-link.active { color: var(--gold); }
+
+.nav-actions { display: flex; align-items: center; gap: 12px; }
+.btn-nav-ghost {
+  padding: 8px 20px;
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text2);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+.btn-nav-ghost:hover { border-color: var(--gold); color: var(--gold); }
+.btn-nav-cta {
+  padding: 9px 22px;
+  background: linear-gradient(135deg, var(--gold), #a8832a);
+  border: none;
+  border-radius: 8px;
+  color: var(--bg);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+.btn-nav-cta:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(201,168,76,0.3); }
+
+/* ═══════════════════════════════════════
+   PAGES / SECTIONS
+═══════════════════════════════════════ */
+.page { display: none; min-height: 100vh; position: relative; z-index: 1; }
+.page.active { display: block; }
+
+/* ═══════════════════════════════════════
+   LANDING PAGE
+═══════════════════════════════════════ */
+#page-landing { padding-top: 72px; }
+
+/* HERO */
+.hero {
+  min-height: calc(100vh - 72px);
+  display: flex; align-items: center; justify-content: center;
+  text-align: center;
+  padding: 80px 48px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(37,37,64,0.3) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37,37,64,0.3) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black 30%, transparent 80%);
+}
+
+.hero-tag {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(201,168,76,0.1);
+  border: 1px solid rgba(201,168,76,0.25);
+  border-radius: 99px;
+  padding: 6px 16px 6px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gold);
+  margin-bottom: 28px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  animation: fadeUp 0.6s ease both;
+}
+.hero-tag-dot { width: 20px; height: 20px; background: var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--bg); }
+
+.hero-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(48px, 8vw, 96px);
+  font-weight: 900;
+  line-height: 1.0;
+  letter-spacing: -3px;
+  margin-bottom: 24px;
+  animation: fadeUp 0.6s ease 0.1s both;
+}
+.hero-title .line2 { color: var(--gold); font-style: italic; display: block; }
+.hero-title .line3 { color: var(--teal); display: block; }
+
+.hero-sub {
+  font-size: 18px;
+  color: var(--text2);
+  max-width: 560px;
+  margin: 0 auto 40px;
+  line-height: 1.6;
+  font-weight: 400;
+  animation: fadeUp 0.6s ease 0.2s both;
+}
+
+.hero-actions {
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+  animation: fadeUp 0.6s ease 0.3s both;
+  flex-wrap: wrap;
+}
+.btn-hero-primary {
+  padding: 16px 36px;
+  background: linear-gradient(135deg, var(--gold), #b8952a);
+  border: none;
+  border-radius: 12px;
+  color: var(--bg);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.25s;
+  box-shadow: 0 0 40px rgba(201,168,76,0.2);
+}
+.btn-hero-primary:hover { transform: translateY(-3px); box-shadow: 0 8px 40px rgba(201,168,76,0.35); }
+
+.btn-hero-ghost {
+  padding: 16px 36px;
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+  display: flex; align-items: center; gap: 8px;
+}
+.btn-hero-ghost:hover { border-color: var(--teal); color: var(--teal); }
+
+.hero-stats {
+  display: flex; justify-content: center; gap: 48px;
+  margin-top: 72px;
+  animation: fadeUp 0.6s ease 0.4s both;
+  flex-wrap: wrap;
+}
+.hero-stat-num {
+  font-family: 'Playfair Display', serif;
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--gold);
+}
+.hero-stat-label { font-size: 13px; color: var(--text3); margin-top: 4px; font-weight: 500; }
+
+.hero-langs {
+  display: flex; justify-content: center; gap: 16px;
+  margin-top: 56px;
+  animation: fadeUp 0.6s ease 0.5s both;
+  flex-wrap: wrap;
+}
+.lang-pill {
+  padding: 8px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text2);
+  transition: all 0.2s;
+}
+.lang-pill:hover { border-color: var(--gold); color: var(--gold); transform: translateY(-2px); }
+
+/* FEATURES SECTION */
+.section {
+  padding: 100px 48px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.section-tag {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--teal);
+  margin-bottom: 14px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(32px, 4vw, 52px);
+  font-weight: 700;
+  letter-spacing: -1.5px;
+  line-height: 1.1;
+  margin-bottom: 16px;
+}
+.section-title em { color: var(--gold); font-style: italic; }
+.section-sub { color: var(--text2); font-size: 16px; max-width: 520px; line-height: 1.6; }
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 56px;
+}
+.feature-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+.feature-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.feature-card:hover { border-color: var(--border2); transform: translateY(-4px); box-shadow: 0 16px 48px rgba(0,0,0,0.3); }
+.feature-card:hover::before { opacity: 1; }
+.feature-icon { font-size: 36px; margin-bottom: 20px; }
+.feature-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+.feature-desc { font-size: 14px; color: var(--text2); line-height: 1.6; }
+.feature-badge {
+  display: inline-block;
+  margin-top: 16px;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+.badge-gold { background: rgba(201,168,76,0.12); color: var(--gold); }
+.badge-teal { background: rgba(45,212,191,0.12); color: var(--teal); }
+.badge-violet { background: rgba(139,92,246,0.12); color: var(--violet); }
+.badge-rose { background: rgba(251,113,133,0.12); color: var(--rose); }
+
+/* HOW IT WORKS */
+.how-bg {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 100px 48px;
+}
+.steps-grid {
+  display: grid; grid-template-columns: repeat(4,1fr); gap: 0;
+  max-width: 1200px; margin: 56px auto 0;
+  position: relative;
+}
+.steps-grid::before {
+  content: '';
+  position: absolute;
+  top: 32px; left: 12.5%; right: 12.5%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border2), var(--gold), var(--border2), transparent);
+}
+.step { text-align: center; padding: 0 24px; }
+.step-num {
+  width: 64px; height: 64px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 20px;
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--gold);
+  position: relative; z-index: 1;
+}
+.step-title { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+.step-desc { font-size: 13px; color: var(--text2); line-height: 1.5; }
+
+/* LANGUAGES SHOWCASE */
+.langs-showcase {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px;
+  margin-top: 56px;
+}
+.lang-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px 20px;
+  text-align: center;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.lang-card:hover { border-color: var(--gold); transform: translateY(-3px); }
+.lang-flag { font-size: 40px; margin-bottom: 12px; }
+.lang-name { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+.lang-level { font-size: 12px; color: var(--text3); font-family: 'JetBrains Mono', monospace; }
+.lang-count { font-size: 11px; color: var(--text3); margin-top: 8px; }
+
+/* TESTIMONIALS */
+.testimonials-grid {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; margin-top: 56px;
+}
+.testimonial {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+}
+.test-stars { color: var(--gold); font-size: 14px; margin-bottom: 14px; }
+.test-quote { font-size: 14px; color: var(--text2); line-height: 1.7; margin-bottom: 20px; font-style: italic; }
+.test-quote::before { content: '"'; color: var(--gold); font-size: 24px; font-family: 'Playfair Display', serif; }
+.test-author { display: flex; align-items: center; gap: 12px; }
+.test-avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+}
+.test-name { font-size: 14px; font-weight: 600; }
+.test-role { font-size: 12px; color: var(--text3); }
+
+/* PRICING */
+.pricing-grid {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; margin-top: 56px;
+}
+.pricing-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 36px;
+  position: relative;
+  transition: all 0.3s;
+}
+.pricing-card.featured {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(45,212,191,0.04));
+  border-color: var(--gold);
+  transform: scale(1.03);
+}
+.pricing-badge {
+  position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+  background: var(--gold);
+  color: var(--bg);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 14px;
+  border-radius: 99px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+.pricing-name { font-size: 14px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; font-family: 'JetBrains Mono', monospace; }
+.pricing-price {
+  font-family: 'Playfair Display', serif;
+  font-size: 48px;
+  font-weight: 700;
+  letter-spacing: -2px;
+  margin-bottom: 4px;
+}
+.pricing-price sup { font-size: 20px; vertical-align: super; color: var(--text2); }
+.pricing-price .per { font-size: 14px; color: var(--text2); font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 400; }
+.pricing-desc { font-size: 13px; color: var(--text3); margin-bottom: 28px; }
+.pricing-features { list-style: none; margin-bottom: 28px; }
+.pricing-features li {
+  font-size: 14px;
+  color: var(--text2);
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(37,37,64,0.5);
+  display: flex; align-items: center; gap: 10px;
+}
+.pricing-features li::before { content: '✓'; color: var(--teal); font-weight: 700; font-size: 12px; flex-shrink: 0; }
+.pricing-features li.disabled { color: var(--text3); }
+.pricing-features li.disabled::before { content: '✕'; color: var(--text3); }
+.btn-pricing {
+  width: 100%;
+  padding: 14px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+  border: none;
+}
+.btn-pricing-outline {
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--text);
+}
+.btn-pricing-outline:hover { border-color: var(--gold); color: var(--gold); }
+.btn-pricing-gold {
+  background: linear-gradient(135deg, var(--gold), #b8952a);
+  color: var(--bg);
+}
+.btn-pricing-gold:hover { box-shadow: 0 4px 20px rgba(201,168,76,0.3); transform: translateY(-1px); }
+
+/* FAQ */
+.faq-list { margin-top: 56px; max-width: 800px; margin-left: auto; margin-right: auto; }
+.faq-item {
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+}
+.faq-q {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  text-align: left;
+  padding: 22px 0;
+  cursor: pointer;
+  display: flex; justify-content: space-between; align-items: center;
+  transition: color 0.2s;
+}
+.faq-q:hover { color: var(--gold); }
+.faq-icon { font-size: 20px; color: var(--gold); flex-shrink: 0; transition: transform 0.3s; }
+.faq-item.open .faq-icon { transform: rotate(45deg); }
+.faq-a {
+  font-size: 14px;
+  color: var(--text2);
+  line-height: 1.7;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease, padding 0.3s;
+  padding-bottom: 0;
+}
+.faq-item.open .faq-a { max-height: 200px; padding-bottom: 20px; }
+
+/* CTA SECTION */
+.cta-section {
+  padding: 120px 48px;
+  text-align: center;
+  background: linear-gradient(180deg, transparent 0%, rgba(201,168,76,0.03) 50%, transparent 100%);
+  border-top: 1px solid var(--border);
+}
+.cta-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(36px, 5vw, 68px);
+  font-weight: 700;
+  letter-spacing: -2px;
+  line-height: 1.1;
+  margin-bottom: 20px;
+}
+.cta-title em { color: var(--gold); font-style: italic; }
+.cta-sub { font-size: 17px; color: var(--text2); margin-bottom: 40px; }
+
+/* ═══════════════════════════════════════
+   APP PAGE (Dashboard)
+═══════════════════════════════════════ */
+#page-app {
+  padding-top: 72px;
+  display: none;
+}
+#page-app.active { display: flex; }
+
+.app-sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  height: calc(100vh - 72px);
+  position: sticky;
+  top: 72px;
+  overflow-y: auto;
+  padding: 24px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text3);
+  padding: 12px 14px 6px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.sidebar-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text2);
+  transition: all 0.15s;
+  border: 1px solid transparent;
+}
+.sidebar-item:hover { background: var(--surface2); color: var(--text); }
+.sidebar-item.active {
+  background: rgba(201,168,76,0.1);
+  color: var(--gold);
+  border-color: rgba(201,168,76,0.2);
+}
+.sidebar-item .si-icon { font-size: 18px; width: 26px; text-align: center; flex-shrink: 0; }
+.sidebar-item .si-badge {
+  margin-left: auto;
+  font-size: 10px;
+  background: var(--rose);
+  color: #fff;
+  border-radius: 99px;
+  padding: 2px 7px;
+  font-weight: 700;
+}
+.sidebar-item .si-badge.green { background: var(--teal); color: var(--bg); }
+
+.sidebar-lang-box {
+  margin-top: auto;
+  padding: 16px;
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.slb-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; font-family: 'JetBrains Mono', monospace; }
+.slb-select {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+}
+.sidebar-user {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px;
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+.user-avatar {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, var(--gold), var(--teal));
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.user-name { font-size: 13px; font-weight: 600; }
+.user-level { font-size: 11px; color: var(--gold); font-family: 'JetBrains Mono', monospace; }
+
+.app-content { flex: 1; overflow-y: auto; padding: 36px 40px; }
+
+/* TAB PANELS */
+.tab-panel { display: none; animation: fadeUp 0.3s ease; }
+.tab-panel.active { display: block; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+/* PANEL HEADER */
+.panel-header { margin-bottom: 32px; }
+.panel-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  line-height: 1.1;
+}
+.panel-title em { color: var(--gold); font-style: italic; }
+.panel-sub { color: var(--text2); font-size: 14px; margin-top: 6px; }
+
+/* DASHBOARD */
+.dash-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px;
+}
+.stat-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px;
+  transition: border-color 0.2s;
+}
+.stat-box:hover { border-color: var(--border2); }
+.stat-val {
+  font-family: 'Playfair Display', serif;
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -1px;
+}
+.stat-label { font-size: 12px; color: var(--text2); margin-top: 4px; font-weight: 500; }
+.stat-delta { font-size: 11px; color: var(--teal); margin-top: 8px; font-family: 'JetBrains Mono', monospace; }
+.stat-delta.down { color: var(--rose); }
+
+.dash-row { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; margin-bottom: 20px; }
+
+.panel-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+}
+.panel-card-title { font-size: 14px; font-weight: 700; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; }
+.panel-card-title span { color: var(--text3); font-size: 12px; font-weight: 400; cursor: pointer; }
+.panel-card-title span:hover { color: var(--gold); }
+
+/* ACTIVITY CHART */
+.activity-bars { display: flex; align-items: flex-end; gap: 8px; height: 80px; }
+.act-day { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.act-bar {
+  width: 100%;
+  background: var(--surface2);
+  border-radius: 4px;
+  transition: background 0.2s;
+  min-height: 4px;
+}
+.act-bar.active { background: linear-gradient(180deg, var(--gold), rgba(201,168,76,0.3)); }
+.act-label { font-size: 10px; color: var(--text3); font-family: 'JetBrains Mono', monospace; }
+
+/* TODAY'S LIST */
+.today-list { display: flex; flex-direction: column; gap: 10px; }
+.today-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px;
+  background: var(--surface2);
+  border-radius: 10px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.today-item:hover { border-color: var(--border2); }
+.today-item-icon { font-size: 20px; }
+.today-item-name { font-size: 13px; font-weight: 600; }
+.today-item-sub { font-size: 11px; color: var(--text3); }
+.today-item-pill {
+  margin-left: auto;
+  font-size: 10px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+}
+.pill-pending { background: rgba(251,113,133,0.1); color: var(--rose); }
+.pill-done { background: rgba(45,212,191,0.1); color: var(--teal); }
+
+/* LEADERBOARD */
+.lb-list { display: flex; flex-direction: column; gap: 8px; }
+.lb-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--surface2);
+}
+.lb-rank { font-size: 14px; font-weight: 700; width: 24px; text-align: center; color: var(--text3); font-family: 'JetBrains Mono', monospace; }
+.lb-rank.gold { color: var(--gold); }
+.lb-rank.silver { color: #c0c0d0; }
+.lb-rank.bronze { color: #cd7f32; }
+.lb-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--surface3); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.lb-name { font-size: 13px; font-weight: 600; }
+.lb-pts { margin-left: auto; font-size: 12px; color: var(--gold); font-family: 'JetBrains Mono', monospace; font-weight: 500; }
+.lb-bar { width: 60px; height: 4px; background: var(--surface); border-radius: 2px; overflow: hidden; }
+.lb-bar-fill { height: 100%; background: var(--gold); border-radius: 2px; }
+
+/* ── FLASHCARD TAB ── */
+.fc-wrap { max-width: 600px; margin: 0 auto; }
+
+.fc-progress-row { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+.fc-prog-bar { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+.fc-prog-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--teal)); border-radius: 3px; transition: width 0.4s ease; }
+.fc-prog-text { font-size: 12px; color: var(--text2); font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
+
+.flashcard-3d { perspective: 1200px; height: 280px; margin-bottom: 24px; }
+.flashcard-inner {
+  width: 100%; height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.55s cubic-bezier(.4,2,.55,.44);
+  cursor: pointer;
+}
+.flashcard-inner.flipped { transform: rotateY(180deg); }
+.fc-side {
+  position: absolute; inset: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 40px;
+  backface-visibility: hidden;
+}
+.fc-side.back {
+  transform: rotateY(180deg);
+  background: linear-gradient(135deg, rgba(201,168,76,0.06), rgba(45,212,191,0.04));
+  border-color: rgba(201,168,76,0.25);
+}
+.fc-lang-tag { font-size: 10px; font-family: 'JetBrains Mono', monospace; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+.fc-word-big { font-family: 'Playfair Display', serif; font-size: 52px; font-weight: 700; letter-spacing: -2px; text-align: center; }
+.fc-tap { font-size: 12px; color: var(--text3); margin-top: 20px; }
+.fc-tr-big { font-family: 'Playfair Display', serif; font-size: 42px; font-weight: 700; color: var(--gold); letter-spacing: -1px; text-align: center; }
+.fc-ex { font-size: 13px; color: var(--text2); margin-top: 14px; text-align: center; font-style: italic; line-height: 1.5; }
+
+.fc-btns { display: flex; gap: 12px; justify-content: center; margin-bottom: 16px; }
+.fc-btn {
+  flex: 1;
+  max-width: 140px;
+  padding: 13px;
+  border-radius: 12px;
+  border: 1px solid;
+  font-size: 14px; font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.fc-btn-hard { background: rgba(251,113,133,0.08); border-color: rgba(251,113,133,0.3); color: var(--rose); }
+.fc-btn-hard:hover { background: rgba(251,113,133,0.18); }
+.fc-btn-mid { background: rgba(201,168,76,0.08); border-color: rgba(201,168,76,0.3); color: var(--gold); }
+.fc-btn-mid:hover { background: rgba(201,168,76,0.18); }
+.fc-btn-easy { background: rgba(45,212,191,0.08); border-color: rgba(45,212,191,0.3); color: var(--teal); }
+.fc-btn-easy:hover { background: rgba(45,212,191,0.18); }
+.fc-flip-btn {
+  display: block; width: 100%;
+  padding: 13px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 14px; font-weight: 600;
+  font-family: inherit; cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+.fc-flip-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+/* ── QUIZ TAB ── */
+.quiz-wrap { max-width: 680px; margin: 0 auto; }
+.quiz-header-row {
+  display: flex; align-items: center; gap: 16px; margin-bottom: 28px;
+}
+.quiz-prog { flex: 1; height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
+.quiz-prog-fill { height: 100%; background: linear-gradient(90deg, var(--violet), var(--teal)); transition: width 0.4s; }
+.quiz-meta { font-size: 13px; color: var(--text2); font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
+.quiz-timer {
+  width: 44px; height: 44px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--gold);
+  flex-shrink: 0;
+}
+.quiz-timer.urgent { color: var(--rose); border-color: rgba(251,113,133,0.4); }
+
+.quiz-q-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 44px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+.quiz-q-type { font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+.quiz-q-text { font-family: 'Playfair Display', serif; font-size: 56px; font-weight: 700; letter-spacing: -2px; }
+
+.quiz-options-4 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.qopt {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  cursor: pointer;
+  font-size: 15px; font-weight: 500;
+  font-family: inherit;
+  color: var(--text);
+  text-align: left;
+  transition: all 0.15s;
+  display: flex; align-items: center; gap: 12px;
+}
+.qopt:hover:not(:disabled) { border-color: var(--gold); background: rgba(201,168,76,0.05); }
+.qopt.correct { border-color: var(--teal); background: rgba(45,212,191,0.08); color: var(--teal); }
+.qopt.wrong { border-color: var(--rose); background: rgba(251,113,133,0.08); color: var(--rose); }
+.qopt .qopt-letter {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  background: var(--surface2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  flex-shrink: 0;
+  color: var(--text3);
+}
+.qopt.correct .qopt-letter { background: rgba(45,212,191,0.2); color: var(--teal); }
+.qopt.wrong .qopt-letter { background: rgba(251,113,133,0.2); color: var(--rose); }
+
+.quiz-streak { text-align: center; font-size: 12px; color: var(--text3); font-family: 'JetBrains Mono', monospace; }
+
+/* ── PRONUNCIATION TAB ── */
+.pron-wrap { max-width: 640px; margin: 0 auto; }
+.pron-main {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 44px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+.pron-word-big { font-family: 'Playfair Display', serif; font-size: 64px; font-weight: 900; letter-spacing: -3px; margin-bottom: 6px; }
+.pron-phonetic { font-family: 'JetBrains Mono', monospace; font-size: 18px; color: var(--text2); margin-bottom: 10px; }
+.pron-meaning { font-size: 14px; color: var(--text3); margin-bottom: 32px; }
+.waveform { height: 64px; background: var(--surface2); border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 3px; padding: 0 20px; margin-bottom: 28px; overflow: hidden; }
+.wb { width: 4px; background: var(--surface3); border-radius: 2px; height: 8px; transition: height 0.1s; }
+.wb.pulse { animation: wv 0.7s ease-in-out infinite; }
+.wb:nth-child(2n).pulse { animation-delay: 0.08s; }
+.wb:nth-child(3n).pulse { animation-delay: 0.16s; }
+.wb:nth-child(4n).pulse { animation-delay: 0.06s; }
+.wb:nth-child(5n).pulse { animation-delay: 0.2s; }
+@keyframes wv { 0%,100%{height:8px} 50%{height:52px} }
+.mic-ring {
+  width: 80px; height: 80px;
+  margin: 0 auto;
+  background: linear-gradient(135deg, var(--gold), var(--teal));
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 0 40px rgba(201,168,76,0.25);
+  border: none;
+}
+.mic-ring:hover { transform: scale(1.08); box-shadow: 0 0 60px rgba(201,168,76,0.4); }
+.mic-ring.rec { background: linear-gradient(135deg, var(--rose), #ff9a6a); animation: rec-pulse 1.2s infinite; }
+@keyframes rec-pulse { 0%,100%{box-shadow:0 0 40px rgba(251,113,133,0.3)} 50%{box-shadow:0 0 80px rgba(251,113,133,0.6)} }
+
+.pron-score-box {
+  background: linear-gradient(135deg, rgba(45,212,191,0.08), rgba(201,168,76,0.05));
+  border: 1px solid rgba(45,212,191,0.2);
+  border-radius: var(--radius);
+  padding: 28px;
+  text-align: center;
+  display: none;
+}
+.pron-score-box.show { display: block; animation: fadeUp 0.3s ease; }
+.pron-big-score { font-family: 'Playfair Display', serif; font-size: 72px; font-weight: 900; color: var(--teal); letter-spacing: -3px; }
+.pron-score-label { font-size: 14px; color: var(--text2); margin-top: 4px; }
+.pron-tips { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; justify-content: center; }
+.pron-tip { font-size: 12px; padding: 6px 14px; background: var(--surface2); border-radius: 99px; color: var(--text2); border: 1px solid var(--border); }
+
+.pron-word-nav { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+.pron-word-chip {
+  padding: 8px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--text2);
+}
+.pron-word-chip:hover, .pron-word-chip.active { background: rgba(201,168,76,0.1); border-color: var(--gold); color: var(--gold); }
+
+/* ── AI CHAT TAB ── */
+.ai-chat-wrap { height: calc(100vh - 72px - 130px); display: flex; flex-direction: column; }
+
+.ai-chat-header {
+  display: flex; align-items: center; gap: 16px;
+  padding: 18px 22px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.ai-orb {
+  width: 44px; height: 44px;
+  background: linear-gradient(135deg, var(--violet), var(--teal));
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+  position: relative;
+}
+.ai-orb::after {
+  content: '';
+  position: absolute;
+  bottom: 2px; right: 2px;
+  width: 10px; height: 10px;
+  background: var(--teal);
+  border-radius: 50%;
+  border: 2px solid var(--surface);
+}
+.ai-chat-name { font-size: 15px; font-weight: 700; }
+.ai-chat-status { font-size: 12px; color: var(--teal); font-family: 'JetBrains Mono', monospace; }
+.ai-mode-pills { margin-left: auto; display: flex; gap: 6px; }
+.mode-pill {
+  padding: 5px 12px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  color: var(--text3);
+  transition: all 0.15s;
+  font-family: 'JetBrains Mono', monospace;
+}
+.mode-pill.active { background: rgba(139,92,246,0.15); border-color: rgba(139,92,246,0.4); color: var(--violet); }
+.mode-pill:hover { border-color: var(--border2); color: var(--text2); }
+
+.messages-box {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  background: var(--bg2);
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 16px;
+}
+.messages-box::-webkit-scrollbar { width: 3px; }
+.messages-box::-webkit-scrollbar-thumb { background: var(--border); }
+
+.chat-msg { max-width: 72%; display: flex; flex-direction: column; gap: 4px; }
+.chat-msg.user { align-self: flex-end; }
+.chat-msg.ai { align-self: flex-start; }
+
+.chat-bubble {
+  padding: 13px 18px;
+  border-radius: 18px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.chat-msg.user .chat-bubble {
+  background: linear-gradient(135deg, var(--violet), #6d3cc9);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.chat-msg.ai .chat-bubble {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+  color: var(--text);
+}
+.chat-correction {
+  font-size: 12px;
+  color: var(--text3);
+  background: rgba(251,113,133,0.06);
+  border: 1px solid rgba(251,113,133,0.15);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-top: 6px;
+  line-height: 1.5;
+}
+.chat-correction strong { color: var(--rose); }
+.chat-correction .correct { color: var(--teal); }
+.chat-ts { font-size: 10px; color: var(--text3); font-family: 'JetBrains Mono', monospace; padding: 0 4px; }
+.chat-msg.user .chat-ts { text-align: right; }
+
+.typing-dots { display: flex; gap: 4px; padding: 14px 18px; }
+.tdot { width: 8px; height: 8px; background: var(--text3); border-radius: 50%; animation: tdot 1.2s infinite; }
+.tdot:nth-child(2){ animation-delay:.2s } .tdot:nth-child(3){ animation-delay:.4s }
+@keyframes tdot { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-8px)} }
+
+.chat-input-area {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  padding: 16px;
+}
+.quick-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.qchip {
+  padding: 5px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  font-size: 12px;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.qchip:hover { border-color: var(--violet); color: var(--violet); }
+
+.input-row { display: flex; gap: 10px; }
+.chat-text-input {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  padding: 12px 16px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  resize: none;
+  min-height: 48px;
+  max-height: 100px;
+  transition: border-color 0.2s;
+}
+.chat-text-input:focus { border-color: var(--violet); }
+.chat-text-input::placeholder { color: var(--text3); }
+.chat-send {
+  width: 48px; height: 48px;
+  background: linear-gradient(135deg, var(--violet), #5a3cc9);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 20px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.chat-send:hover { transform: scale(1.06); box-shadow: 0 4px 20px rgba(139,92,246,0.4); }
+
+/* VOCAB TAB */
+.vocab-filter { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+.vfilt-btn {
+  padding: 8px 16px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text2);
+  font-size: 13px; font-weight: 500;
+  font-family: inherit; cursor: pointer;
+  transition: all 0.15s;
+}
+.vfilt-btn.active { background: rgba(201,168,76,0.1); border-color: var(--gold); color: var(--gold); }
+.vfilt-btn:hover { border-color: var(--border2); }
+
+.vocab-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.vocab-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 18px;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.vocab-card:hover { border-color: var(--gold); transform: translateY(-2px); }
+.vc-word { font-size: 20px; font-weight: 700; font-family: 'Playfair Display', serif; margin-bottom: 4px; }
+.vc-tr { font-size: 13px; color: var(--gold); font-weight: 500; margin-bottom: 8px; }
+.vc-ex { font-size: 12px; color: var(--text3); line-height: 1.4; font-style: italic; }
+.vc-meta { display: flex; align-items: center; gap: 6px; margin-top: 12px; }
+.vc-level { font-size: 10px; font-family: 'JetBrains Mono', monospace; }
+.vc-bar { flex: 1; height: 3px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
+.vc-bar-fill { height: 100%; border-radius: 2px; background: var(--gold); }
+
+/* FOOTER */
+footer {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 60px 48px 32px;
+  position: relative; z-index: 1;
+}
+.footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; max-width: 1200px; margin: 0 auto 48px; }
+.footer-brand .logo { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 900; margin-bottom: 12px; }
+.footer-brand .logo em { color: var(--gold); font-style: italic; }
+.footer-brand p { font-size: 14px; color: var(--text2); line-height: 1.6; max-width: 280px; }
+.footer-col-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text3); margin-bottom: 16px; font-family: 'JetBrains Mono', monospace; }
+.footer-link { display: block; font-size: 14px; color: var(--text2); text-decoration: none; margin-bottom: 10px; transition: color 0.15s; cursor: pointer; }
+.footer-link:hover { color: var(--gold); }
+.footer-bottom { display: flex; align-items: center; justify-content: space-between; padding-top: 28px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text3); max-width: 1200px; margin: 0 auto; }
+
+/* RESPONSIVE */
+@media (max-width: 1024px) {
+  .features-grid, .pricing-grid { grid-template-columns: 1fr 1fr; }
+  .testimonials-grid { grid-template-columns: 1fr; }
+  .langs-showcase { grid-template-columns: repeat(3,1fr); }
+  .dash-stats { grid-template-columns: 1fr 1fr; }
+  .vocab-grid { grid-template-columns: 1fr 1fr; }
+  .dash-row { grid-template-columns: 1fr; }
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+  .steps-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 768px) {
+  .navbar { padding: 0 20px; }
+  .nav-links { display: none; }
+  .hero { padding: 60px 24px; }
+  .section { padding: 60px 24px; }
+  .features-grid, .pricing-grid, .langs-showcase, .vocab-grid { grid-template-columns: 1fr; }
+  .pricing-card.featured { transform: none; }
+  .hero-stats { gap: 24px; }
+  .app-sidebar { width: 56px; overflow: hidden; }
+  .app-sidebar .si-icon { font-size: 20px; }
+  .sidebar-item span, .sidebar-section-label, .slb-label, .slb-select, .sidebar-user .user-name, .sidebar-user .user-level { display: none; }
+  .sidebar-item { justify-content: center; }
+  .app-content { padding: 20px; }
+  .quiz-options-4 { grid-template-columns: 1fr; }
+  .faq-list { padding: 0; }
+}
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+<div class="glow-1"></div>
+<div class="glow-2"></div>
+
+<!-- NAVBAR -->
+<nav class="navbar" id="navbar">
+  <div class="nav-logo">
+    Lingua<span class="accent">Pro</span> <span class="logo-dot"></span>
+  </div>
+  <div class="nav-links">
+    <a class="nav-link" onclick="goTo('features')">Özellikler</a>
+    <a class="nav-link" onclick="goTo('languages')">Diller</a>
+    <a class="nav-link" onclick="goTo('pricing')">Fiyatlar</a>
+    <a class="nav-link" onclick="goTo('faq')">SSS</a>
+  </div>
+  <div class="nav-actions">
+    <button class="btn-nav-ghost" onclick="showPage('app')">Giriş Yap</button>
+    <button class="btn-nav-cta" onclick="showPage('app')">Ücretsiz Başla →</button>
+  </div>
+</nav>
+
+<!-- ═══════════ LANDING PAGE ═══════════ -->
+<div class="page active" id="page-landing">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-grid"></div>
+    <div style="position:relative;z-index:1">
+      <div class="hero-tag">
+        <span class="hero-tag-dot">✦</span>
+        Yapay Zeka Destekli · 5 Dil · Ücretsiz Başla
+      </div>
+      <h1 class="hero-title">
+        Dil öğrenmek<br>
+        <span class="line2">bu kadar</span>
+        <span class="line3">kolay olmamıştı.</span>
+      </h1>
+      <p class="hero-sub">
+        Flashcard, quiz, telaffuz analizi ve gerçek zamanlı AI sohbet partneri ile
+        dil öğrenme yolculuğunuzu bir üst seviyeye taşıyın.
+      </p>
+      <div class="hero-actions">
+        <button class="btn-hero-primary" onclick="showPage('app')">Hemen Başla — Ücretsiz</button>
+        <button class="btn-hero-ghost" onclick="goTo('features')">▶ Nasıl Çalışır?</button>
+      </div>
+      <div class="hero-stats">
+        <div>
+          <div class="hero-stat-num">50K+</div>
+          <div class="hero-stat-label">Aktif Öğrenci</div>
+        </div>
+        <div>
+          <div class="hero-stat-num">2M+</div>
+          <div class="hero-stat-label">Öğrenilen Kelime</div>
+        </div>
+        <div>
+          <div class="hero-stat-num">5</div>
+          <div class="hero-stat-label">Desteklenen Dil</div>
+        </div>
+        <div>
+          <div class="hero-stat-num">4.9★</div>
+          <div class="hero-stat-label">Kullanıcı Puanı</div>
+        </div>
+      </div>
+      <div class="hero-langs">
+        <span class="lang-pill">🇬🇧 İngilizce</span>
+        <span class="lang-pill">🇩🇪 Almanca</span>
+        <span class="lang-pill">🇫🇷 Fransızca</span>
+        <span class="lang-pill">🇪🇸 İspanyolca</span>
+        <span class="lang-pill">🇯🇵 Japonca</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="section" id="features">
+    <div class="section-tag">// Özellikler</div>
+    <h2 class="section-title">Öğrenmenin her<br><em>boyutunu</em> kapsıyoruz</h2>
+    <p class="section-sub">Sadece kelime ezberlemek değil — dinleme, konuşma, telaffuz ve gerçek sohbet pratiği.</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🧠</div>
+        <div class="feature-title">Spaced Repetition</div>
+        <div class="feature-desc">Bilimsel kanıtlı aralıklı tekrar algoritması ile öğrendiklerini kalıcı hale getir. Unutma eğrisini yen.</div>
+        <span class="feature-badge badge-gold">SRS Algoritması</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <div class="feature-title">Akıllı Quizler</div>
+        <div class="feature-desc">Seviyene göre otomatik güçlük ayarı yapan, anlık geri bildirim veren quiz sistemi. 5 farklı soru tipi.</div>
+        <span class="feature-badge badge-teal">Adaptif AI</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎤</div>
+        <div class="feature-title">Telaffuz Analizi</div>
+        <div class="feature-desc">Sesinizi analiz eden AI ile ana dil gibi konuşmayı öğren. Fonetik geri bildirim ve puan sistemi.</div>
+        <span class="feature-badge badge-violet">Ses Analizi</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🤖</div>
+        <div class="feature-title">AI Sohbet Partneri</div>
+        <div class="feature-desc">Gerçek zamanlı AI ile sohbet et, dilbilgisi hatalarını öğren, doğal akıcılık kazan. 7/24 müsait.</div>
+        <span class="feature-badge badge-rose">Claude Destekli</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <div class="feature-title">İlerleme Takibi</div>
+        <div class="feature-desc">Günlük aktivite, seri takibi, CEFR seviye göstergesi. Tam olarak nerede olduğunu ve ne kadar kaldığını gör.</div>
+        <span class="feature-badge badge-gold">Detaylı Analiz</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🏆</div>
+        <div class="feature-title">Liderlik Tablosu</div>
+        <div class="feature-desc">Diğer öğrencilerle yarış, seri ödülleri kazan, rozetler topla. Öğrenmeyi oyuna dönüştür.</div>
+        <span class="feature-badge badge-teal">Gamification</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <div class="how-bg" id="how">
+    <div style="max-width:1200px;margin:0 auto">
+      <div class="section-tag" style="text-align:center">// Nasıl Çalışır</div>
+      <h2 class="section-title" style="text-align:center">4 adımda <em>akıcı</em> konuş</h2>
+    </div>
+    <div class="steps-grid">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-title">Dilini Seç</div>
+        <div class="step-desc">5 dil arasından birini veya birden fazlasını seç. Seviyeni belirle.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-title">Kelime Öğren</div>
+        <div class="step-desc">Flashcard ve SRS algoritması ile kelime hazineni genişlet.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-title">Test Et</div>
+        <div class="step-desc">Quiz ve telaffuz pratiği ile öğrendiklerini pekiştir.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-title">Konuş</div>
+        <div class="step-desc">AI partneri ile gerçek sohbet pratiği yaparak akıcılığa ulaş.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LANGUAGES -->
+  <section class="section" id="languages">
+    <div class="section-tag">// Desteklenen Diller</div>
+    <h2 class="section-title">Hangi dili <em>öğrenmek</em> istiyorsun?</h2>
+    <p class="section-sub">5 dilde binlerce kelime, binlerce soru ve özel ses varlıkları.</p>
+    <div class="langs-showcase">
+      <div class="lang-card">
+        <div class="lang-flag">🇬🇧</div>
+        <div class="lang-name">İngilizce</div>
+        <div class="lang-level">A1 → C2</div>
+        <div class="lang-count">3.200+ kelime</div>
+      </div>
+      <div class="lang-card">
+        <div class="lang-flag">🇩🇪</div>
+        <div class="lang-name">Almanca</div>
+        <div class="lang-level">A1 → B2</div>
+        <div class="lang-count">2.100+ kelime</div>
+      </div>
+      <div class="lang-card">
+        <div class="lang-flag">🇫🇷</div>
+        <div class="lang-name">Fransızca</div>
+        <div class="lang-level">A1 → B2</div>
+        <div class="lang-count">1.800+ kelime</div>
+      </div>
+      <div class="lang-card">
+        <div class="lang-flag">🇪🇸</div>
+        <div class="lang-name">İspanyolca</div>
+        <div class="lang-level">A1 → B1</div>
+        <div class="lang-count">1.600+ kelime</div>
+      </div>
+      <div class="lang-card">
+        <div class="lang-flag">🇯🇵</div>
+        <div class="lang-name">Japonca</div>
+        <div class="lang-level">Hiragana → N3</div>
+        <div class="lang-count">1.200+ kelime</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIALS -->
+  <div class="how-bg">
+    <div style="max-width:1200px;margin:0 auto">
+      <div class="section-tag">// Kullanıcı Yorumları</div>
+      <h2 class="section-title">Onlar <em>denedi,</em> anlattı</h2>
+      <div class="testimonials-grid">
+        <div class="testimonial">
+          <div class="test-stars">★★★★★</div>
+          <div class="test-quote">6 ayda İngilizce B1'den C1'e çıktım. AI sohbet partneri inanılmaz gerçekçi — sanki native speaker ile konuşuyorsunuz.</div>
+          <div class="test-author">
+            <div class="test-avatar">👨‍💻</div>
+            <div>
+              <div class="test-name">Kaan Demir</div>
+              <div class="test-role">Yazılım Geliştirici, İstanbul</div>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial">
+          <div class="test-stars">★★★★★</div>
+          <div class="test-quote">Duolingo'dan çok daha iyi. Telaffuz analizi sayesinde Almanca aksamım dramatik biçimde iyileşti.</div>
+          <div class="test-author">
+            <div class="test-avatar">👩‍🎓</div>
+            <div>
+              <div class="test-name">Selin Yıldız</div>
+              <div class="test-role">Tıp Öğrencisi, Ankara</div>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial">
+          <div class="test-stars">★★★★★</div>
+          <div class="test-quote">Japonca öğrenmek bu uygulamayla çok daha sistematik hale geldi. Spaced repetition sistemi mükemmel çalışıyor.</div>
+          <div class="test-author">
+            <div class="test-avatar">🧑‍🎨</div>
+            <div>
+              <div class="test-name">Emre Çelik</div>
+              <div class="test-role">Grafik Tasarımcı, İzmir</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRICING -->
+  <section class="section" id="pricing">
+    <div class="section-tag">// Fiyatlandırma</div>
+    <h2 class="section-title">Şeffaf, <em>adil</em> fiyatlar</h2>
+    <p class="section-sub">Kredi kartı gerektirmeden başla. İstediğinde yükselt.</p>
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <div class="pricing-name">Ücretsiz</div>
+        <div class="pricing-price">₺0<span class="per">/ay</span></div>
+        <div class="pricing-desc">Başlamak için mükemmel</div>
+        <ul class="pricing-features">
+          <li>Günde 20 Flashcard</li>
+          <li>5 Quiz sorusu/gün</li>
+          <li>Temel telaffuz</li>
+          <li>2 dil</li>
+          <li class="disabled">AI Sohbet Partneri</li>
+          <li class="disabled">İlerleme analizi</li>
+          <li class="disabled">Liderlik tablosu</li>
+        </ul>
+        <button class="btn-pricing btn-pricing-outline" onclick="showPage('app')">Ücretsiz Başla</button>
+      </div>
+      <div class="pricing-card featured">
+        <div class="pricing-badge">En Popüler</div>
+        <div class="pricing-name">Pro</div>
+        <div class="pricing-price">₺149<span class="per">/ay</span></div>
+        <div class="pricing-desc">Ciddi öğrenciler için</div>
+        <ul class="pricing-features">
+          <li>Sınırsız Flashcard</li>
+          <li>Sınırsız Quiz</li>
+          <li>Gelişmiş telaffuz analizi</li>
+          <li>Tüm diller (5)</li>
+          <li>AI Sohbet Partneri</li>
+          <li>Detaylı ilerleme analizi</li>
+          <li>Liderlik tablosu</li>
+        </ul>
+        <button class="btn-pricing btn-pricing-gold" onclick="showPage('app')">Pro'ya Geç →</button>
+      </div>
+      <div class="pricing-card">
+        <div class="pricing-name">Kurumsal</div>
+        <div class="pricing-price">₺499<span class="per">/ay</span></div>
+        <div class="pricing-desc">Şirketler ve kurumlar için</div>
+        <ul class="pricing-features">
+          <li>Pro'nun tüm özellikleri</li>
+          <li>10 kullanıcıya kadar</li>
+          <li>Özel içerik yükleme</li>
+          <li>Yönetici paneli</li>
+          <li>Öncelikli destek</li>
+          <li>Özel raporlama</li>
+          <li>API erişimi</li>
+        </ul>
+        <button class="btn-pricing btn-pricing-outline" onclick="showPage('app')">İletişime Geç</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="section" id="faq">
+    <div style="text-align:center;margin-bottom:8px" class="section-tag">// Sık Sorulan Sorular</div>
+    <h2 class="section-title" style="text-align:center">Aklındaki <em>sorular</em></h2>
+    <div class="faq-list" id="faq-list">
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          <span>Ücretsiz plan ne kadar süre kullanılabilir?</span>
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-a">Ücretsiz plan süresiz kullanılabilir. Hiçbir zaman ücretli plana geçmek zorunda değilsiniz. Ancak günlük kart ve quiz limitleri uygulanır. Pro plana geçtiğinizde tüm sınırlar kalkar ve AI sohbet özelliği aktif olur.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          <span>AI sohbet partneri hangi dilleri destekliyor?</span>
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-a">AI sohbet partneri şu anda İngilizce, Almanca ve Fransızca için tam destek sunmaktadır. İspanyolca ve Japonca desteği yakında eklenecektir. AI partneri, dilbilgisi hatalarınızı anında düzelterek öğrenmenizi hızlandırır.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          <span>Telaffuz analizi nasıl çalışıyor?</span>
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-a">Tarayıcınızın mikrofon erişimini kullanarak sesinizi kaydediyoruz ve AI modelimiz fonetik analiz yaparak 100 üzerinden puan veriyor. Hangi seslerde zorlandığınızı tespit edip hedefli pratik önerileri sunuyor.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          <span>İlerleme verim kaybolur mu?</span>
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-a">Hayır. Tüm ilerleme verileriniz güvenli sunucularımızda saklanır. Ücretsiz plandan Pro'ya geçtiğinizde ya da geri döndüğünüzde hiçbir veriy kaybetmezsiniz. SRS algoritması hangi kelimeleri ne zaman tekrar etmeniz gerektiğini hesaplamaya devam eder.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          <span>Spaced Repetition (SRS) nedir, nasıl çalışır?</span>
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-a">SRS, Hermann Ebbinghaus'un unutma eğrisi teorisine dayanan bilimsel bir öğrenme yöntemidir. Sistememiz, bir kelimeyi ne kadar kolay bulduğunuza göre bir sonraki tekrar zamanını hesaplar. Zor bulduğunuz kelimeler daha sık, kolay bulduklarınız daha seyrek karşınıza çıkar.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          <span>Aboneliği istediğim zaman iptal edebilir miyim?</span>
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-a">Evet, istediğiniz zaman ve herhangi bir ceza olmaksızın iptal edebilirsiniz. İptal ettiğinizde mevcut dönem sonuna kadar Pro özellikleriniz aktif kalmaya devam eder, ardından ücretsiz plana geçiş yapılır.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <div class="cta-section">
+    <h2 class="cta-title">Bugün başla,<br><em>yarın konuş.</em></h2>
+    <p class="cta-sub">50.000'den fazla öğrenci ile yolculuğuna katıl. Kredi kartı gerekmez.</p>
+    <button class="btn-hero-primary" onclick="showPage('app')">Ücretsiz Hesap Oluştur →</button>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo">Lingua<em>Pro</em></div>
+        <p>Yapay zeka destekli dil öğrenme platformu. Bilimsel yöntemler ve modern teknoloji ile dil öğrenmeyi kolaylaştırıyoruz.</p>
+      </div>
+      <div>
+        <div class="footer-col-title">Platform</div>
+        <span class="footer-link" onclick="showPage('app')">Uygulamayı Aç</span>
+        <span class="footer-link" onclick="goTo('features')">Özellikler</span>
+        <span class="footer-link" onclick="goTo('pricing')">Fiyatlar</span>
+        <span class="footer-link">Mobil Uygulama</span>
+      </div>
+      <div>
+        <div class="footer-col-title">Şirket</div>
+        <span class="footer-link">Hakkımızda</span>
+        <span class="footer-link">Blog</span>
+        <span class="footer-link">Kariyer</span>
+        <span class="footer-link">Basın</span>
+      </div>
+      <div>
+        <div class="footer-col-title">Destek</div>
+        <span class="footer-link" onclick="showPage('app'); setTimeout(()=>switchTab('chat'),100)">İletişim</span>
+        <span class="footer-link" onclick="goTo('faq')">SSS</span>
+        <span class="footer-link">Gizlilik Politikası</span>
+        <span class="footer-link">Kullanım Şartları</span>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2025 LinguaPro. Tüm hakları saklıdır.</span>
+      <span>🇹🇷 Türkiye'den sevgiyle yapıldı</span>
+    </div>
+  </footer>
+</div>
+<!-- END LANDING -->
+
+<!-- ═══════════ APP PAGE ═══════════ -->
+<div class="page" id="page-app">
+
+  <!-- APP SIDEBAR -->
+  <aside class="app-sidebar">
+    <div class="sidebar-user">
+      <div class="user-avatar">👤</div>
+      <div>
+        <div class="user-name">Öğrenci</div>
+        <div class="user-level">B1 · 🔥12</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section-label">Ana Menü</div>
+    <div class="sidebar-item active" onclick="switchTab('dashboard')">
+      <span class="si-icon">🏠</span> <span>Dashboard</span>
+    </div>
+    <div class="sidebar-item" onclick="switchTab('flashcard')">
+      <span class="si-icon">🃏</span> <span>Flashcard</span>
+      <span class="si-badge">24</span>
+    </div>
+    <div class="sidebar-item" onclick="switchTab('quiz')">
+      <span class="si-icon">⚡</span> <span>Quiz</span>
+    </div>
+    <div class="sidebar-item" onclick="switchTab('pronunciation')">
+      <span class="si-icon">🎤</span> <span>Telaffuz</span>
+      <span class="si-badge green">Yeni</span>
+    </div>
+    <div class="sidebar-item" onclick="switchTab('chat')">
+      <span class="si-icon">🤖</span> <span>AI Partner</span>
+    </div>
+    <div class="sidebar-item" onclick="switchTab('vocabulary')">
+      <span class="si-icon">📖</span> <span>Kelime Bankası</span>
+    </div>
+
+    <div class="sidebar-section-label">Sosyal</div>
+    <div class="sidebar-item" onclick="switchTab('leaderboard')">
+      <span class="si-icon">🏆</span> <span>Liderlik</span>
+    </div>
+
+    <div class="sidebar-lang-box">
+      <div class="slb-label">Öğrenilen Dil</div>
+      <select class="slb-select" id="appLang" onchange="changeAppLang()">
+        <option value="en">🇬🇧 İngilizce</option>
+        <option value="de">🇩🇪 Almanca</option>
+        <option value="fr">🇫🇷 Fransızca</option>
+        <option value="es">🇪🇸 İspanyolca</option>
+        <option value="ja">🇯🇵 Japonca</option>
+      </select>
+    </div>
+  </aside>
+
+  <!-- APP CONTENT -->
+  <div class="app-content">
+
+    <!-- DASHBOARD -->
+    <div class="tab-panel active" id="tab-dashboard">
+      <div class="panel-header">
+        <div class="panel-title">Hoş geldin, <em>Öğrenci!</em> 👋</div>
+        <div class="panel-sub">Bugün de mükemmel bir gün. 12 günlük serin devam ediyor.</div>
+      </div>
+      <div class="dash-stats">
+        <div class="stat-box">
+          <div class="stat-val" style="color:var(--gold)">🔥 12</div>
+          <div class="stat-label">Günlük Seri</div>
+          <div class="stat-delta">↑ En yüksek: 18</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" style="color:var(--teal)">340</div>
+          <div class="stat-label">Öğrenilen Kelime</div>
+          <div class="stat-delta">↑ +8 bu hafta</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" style="color:var(--violet)">B1</div>
+          <div class="stat-label">CEFR Seviyesi</div>
+          <div class="stat-delta">B2'ye %68</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" style="color:var(--rose)">1.240</div>
+          <div class="stat-label">Toplam XP</div>
+          <div class="stat-delta">↑ +90 bugün</div>
+        </div>
+      </div>
+      <div class="dash-row">
+        <div class="panel-card">
+          <div class="panel-card-title">Haftalık Aktivite <span onclick="">Tümü →</span></div>
+          <div class="activity-bars" id="act-bars"></div>
+        </div>
+        <div class="panel-card">
+          <div class="panel-card-title">Bugünkü Görevler</div>
+          <div class="today-list">
+            <div class="today-item" onclick="switchTab('flashcard')">
+              <span class="today-item-icon">🃏</span>
+              <div>
+                <div class="today-item-name">Flashcard Tekrarı</div>
+                <div class="today-item-sub">24 kart bekliyor</div>
+              </div>
+              <span class="today-item-pill pill-pending">Bekliyor</span>
+            </div>
+            <div class="today-item" onclick="switchTab('quiz')">
+              <span class="today-item-icon">⚡</span>
+              <div>
+                <div class="today-item-name">Günlük Quiz</div>
+                <div class="today-item-sub">10 soru · +50 XP</div>
+              </div>
+              <span class="today-item-pill pill-pending">Bekliyor</span>
+            </div>
+            <div class="today-item">
+              <span class="today-item-icon">🎤</span>
+              <div>
+                <div class="today-item-name">Telaffuz Pratiği</div>
+                <div class="today-item-sub">5 kelime</div>
+              </div>
+              <span class="today-item-pill pill-done">✓ Tamam</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="dash-row">
+        <div class="panel-card">
+          <div class="panel-card-title">Son Öğrenilenler</div>
+          <div class="vocab-grid" style="margin-top:0">
+            <div class="vocab-card"><div class="vc-word">Serendipity</div><div class="vc-tr">Mutlu Tesadüf</div><div class="vc-meta"><span class="vc-level badge-gold" style="font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(201,168,76,0.1);color:var(--gold)">B2</span><div class="vc-bar"><div class="vc-bar-fill" style="width:85%"></div></div></div></div>
+            <div class="vocab-card"><div class="vc-word">Ephemeral</div><div class="vc-tr">Geçici</div><div class="vc-meta"><span class="vc-level" style="font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(45,212,191,0.1);color:var(--teal)">C1</span><div class="vc-bar"><div class="vc-bar-fill" style="width:60%"></div></div></div></div>
+            <div class="vocab-card"><div class="vc-word">Resilience</div><div class="vc-tr">Dayanıklılık</div><div class="vc-meta"><span class="vc-level" style="font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(201,168,76,0.1);color:var(--gold)">B2</span><div class="vc-bar"><div class="vc-bar-fill" style="width:95%"></div></div></div></div>
+          </div>
+        </div>
+        <div class="panel-card">
+          <div class="panel-card-title">Liderlik (Bu Hafta)</div>
+          <div class="lb-list" id="lb-mini"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FLASHCARD -->
+    <div class="tab-panel" id="tab-flashcard">
+      <div class="panel-header">
+        <div class="panel-title"><em>Flashcard</em> Pratiği 🃏</div>
+        <div class="panel-sub">Kartı çevirmek için tıkla. Ardından ne kadar iyi bildiğini değerlendir.</div>
+      </div>
+      <div class="fc-wrap">
+        <div class="fc-progress-row">
+          <div class="fc-prog-bar"><div class="fc-prog-fill" id="fcProgFill" style="width:12%"></div></div>
+          <div class="fc-prog-text" id="fcProgText">1 / 8</div>
+        </div>
+        <div class="flashcard-3d">
+          <div class="flashcard-inner" id="fc3d" onclick="flipFC()">
+            <div class="fc-side front">
+              <div class="fc-lang-tag" id="fcLangTag">İngilizce</div>
+              <div class="fc-word-big" id="fcWord">Serendipity</div>
+              <div class="fc-tap">Çevirmek için tıkla</div>
+            </div>
+            <div class="fc-side back">
+              <div class="fc-lang-tag">Türkçe</div>
+              <div class="fc-tr-big" id="fcTr">Mutlu Tesadüf</div>
+              <div class="fc-ex" id="fcEx">"It was pure serendipity that we met at the airport."</div>
+            </div>
+          </div>
+        </div>
+        <div id="fcRateRow" style="display:none">
+          <div class="fc-btns">
+            <button class="fc-btn fc-btn-hard" onclick="rateFC('hard')">😰 Zor</button>
+            <button class="fc-btn fc-btn-mid" onclick="rateFC('mid')">😐 Orta</button>
+            <button class="fc-btn fc-btn-easy" onclick="rateFC('easy')">😊 Kolay</button>
+          </div>
+        </div>
+        <div id="fcFlipRow">
+          <button class="fc-flip-btn" onclick="flipFC()">Kartı Çevir →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUIZ -->
+    <div class="tab-panel" id="tab-quiz">
+      <div class="panel-header">
+        <div class="panel-title">Günlük <em>Quiz</em> ⚡</div>
+        <div class="panel-sub">Doğru Türkçe çeviriyi seç. 15 saniye sınırın var.</div>
+      </div>
+      <div class="quiz-wrap">
+        <div class="quiz-header-row">
+          <div class="quiz-prog"><div class="quiz-prog-fill" id="qProgFill" style="width:0%"></div></div>
+          <div class="quiz-meta" id="qMeta">1 / 5</div>
+          <div class="quiz-timer" id="qTimer">15</div>
+        </div>
+        <div class="quiz-q-card">
+          <div class="quiz-q-type">Bu kelimenin Türkçesi nedir?</div>
+          <div class="quiz-q-text" id="qWord">—</div>
+        </div>
+        <div class="quiz-options-4" id="qOpts"></div>
+        <div class="quiz-streak">Doğru: <span id="qCorrect">0</span> &nbsp;|&nbsp; Yanlış: <span id="qWrong">0</span></div>
+      </div>
+    </div>
+
+    <!-- PRONUNCIATION -->
+    <div class="tab-panel" id="tab-pronunciation">
+      <div class="panel-header">
+        <div class="panel-title"><em>Telaffuz</em> Analizi 🎤</div>
+        <div class="panel-sub">Mikrofon düğmesine bas, kelimeyi söyle. AI puanını anında göreceksin.</div>
+      </div>
+      <div class="pron-wrap">
+        <div class="pron-main">
+          <div class="pron-word-big" id="pronWord">Ambiguous</div>
+          <div class="pron-phonetic" id="pronPhon">/æmˈbɪɡjuəs/</div>
+          <div class="pron-meaning" id="pronMean">Belirsiz, muğlak</div>
+          <div class="waveform" id="waveform"></div>
+          <button class="mic-ring" id="micRing" onclick="toggleMic()">🎤</button>
+        </div>
+        <div class="pron-score-box" id="pronScoreBox">
+          <div class="pron-big-score" id="pronBigScore">—</div>
+          <div class="pron-score-label" id="pronScoreLabel">/ 100</div>
+          <div class="pron-tips" id="pronTips"></div>
+        </div>
+        <div class="pron-word-nav" id="pronWordNav"></div>
+      </div>
+    </div>
+
+    <!-- AI CHAT -->
+    <div class="tab-panel" id="tab-chat">
+      <div class="panel-header">
+        <div class="panel-title">AI <em>Sohbet</em> Partneri 🤖</div>
+        <div class="panel-sub">Gerçek bir konuşma pratiği yap. Hatalarını AI anında düzeltir.</div>
+      </div>
+      <div class="ai-chat-wrap">
+        <div class="ai-chat-header">
+          <div class="ai-orb">🤖</div>
+          <div>
+            <div class="ai-chat-name">Lingua AI</div>
+            <div class="ai-chat-status">● Çevrimiçi · İngilizce Modu</div>
+          </div>
+          <div class="ai-mode-pills">
+            <div class="mode-pill active" onclick="setMode(this,'conversation')">Sohbet</div>
+            <div class="mode-pill" onclick="setMode(this,'grammar')">Dilbilgisi</div>
+            <div class="mode-pill" onclick="setMode(this,'debate')">Tartışma</div>
+          </div>
+        </div>
+        <div class="messages-box" id="msgBox">
+          <div class="chat-msg ai">
+            <div class="chat-bubble">Hello! 👋 I'm your AI language partner. I'll help you practice English naturally. Write anything — I'll respond and gently correct any mistakes. What would you like to talk about today?</div>
+            <div class="chat-ts">şimdi</div>
+          </div>
+        </div>
+        <div class="chat-input-area">
+          <div class="quick-chips" id="quickChips">
+            <span class="qchip" onclick="useChip('Tell me about your day')">Tell me about your day</span>
+            <span class="qchip" onclick="useChip('I want to practice past tense')">Practice past tense</span>
+            <span class="qchip" onclick="useChip('What are your hobbies?')">What are your hobbies?</span>
+            <span class="qchip" onclick="useChip('Correct my grammar please')">Correct my grammar</span>
+          </div>
+          <div class="input-row">
+            <textarea class="chat-text-input" id="chatInput" placeholder="İngilizce yaz..." rows="1" onkeydown="chatKey(event)"></textarea>
+            <button class="chat-send" onclick="sendChat()">➤</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VOCABULARY -->
+    <div class="tab-panel" id="tab-vocabulary">
+      <div class="panel-header">
+        <div class="panel-title"><em>Kelime</em> Bankası 📖</div>
+        <div class="panel-sub">Öğrendiğin tüm kelimeler. Seviyeye göre filtrele.</div>
+      </div>
+      <div class="vocab-filter">
+        <button class="vfilt-btn active" onclick="filterVocab(this,'all')">Tümü</button>
+        <button class="vfilt-btn" onclick="filterVocab(this,'a1')">A1</button>
+        <button class="vfilt-btn" onclick="filterVocab(this,'b1')">B1</button>
+        <button class="vfilt-btn" onclick="filterVocab(this,'b2')">B2</button>
+        <button class="vfilt-btn" onclick="filterVocab(this,'c1')">C1</button>
+      </div>
+      <div class="vocab-grid" id="vocabGrid"></div>
+    </div>
+
+    <!-- LEADERBOARD -->
+    <div class="tab-panel" id="tab-leaderboard">
+      <div class="panel-header">
+        <div class="panel-title"><em>Liderlik</em> Tablosu 🏆</div>
+        <div class="panel-sub">Bu haftanın en iyi öğrencileri.</div>
+      </div>
+      <div class="panel-card" style="max-width:600px">
+        <div class="lb-list" id="lbFull"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+<!-- END APP -->
+
+<script>
+// ═══════════════════════════════
+// CURSOR
+// ═══════════════════════════════
+const cur = document.getElementById('cursor');
+const ring = document.getElementById('cursorRing');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{
+  mx=e.clientX; my=e.clientY;
+  cur.style.left=mx+'px'; cur.style.top=my+'px';
+});
+function animRing(){
+  rx+=(mx-rx)*0.12; ry+=(my-ry)*0.12;
+  ring.style.left=rx+'px'; ring.style.top=ry+'px';
+  requestAnimationFrame(animRing);
+}
+animRing();
+
+// ═══════════════════════════════
+// NAV SCROLL
+// ═══════════════════════════════
+window.addEventListener('scroll',()=>{
+  document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 20);
+});
+
+// ═══════════════════════════════
+// PAGE ROUTING
+// ═══════════════════════════════
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  window.scrollTo(0,0);
+  if(id==='app') initApp();
+}
+
+function goTo(id) {
+  document.getElementById(id)?.scrollIntoView({behavior:'smooth'});
+}
+
+// ═══════════════════════════════
+// APP TABS
+// ═══════════════════════════════
+function switchTab(id) {
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(i=>i.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  document.querySelectorAll('.sidebar-item').forEach(i=>{
+    if(i.getAttribute('onclick')?.includes("'"+id+"'")) i.classList.add('active');
+  });
+  if(id==='quiz') initQuiz();
+  if(id==='vocabulary') renderVocab();
+  if(id==='leaderboard') renderLbFull();
+  if(id==='pronunciation') initPron();
+  if(id==='flashcard') initFC();
+  if(id==='dashboard') renderDash();
+}
+
+// ═══════════════════════════════
+// DATA
+// ═══════════════════════════════
+const VOCAB = {
+  en:[
+    {w:'Serendipity',tr:'Mutlu Tesadüf',ex:'It was pure serendipity that we met.',lv:'B2',mastery:85},
+    {w:'Ephemeral',tr:'Geçici / Kısa Ömürlü',ex:'Beauty is ephemeral.',lv:'C1',mastery:60},
+    {w:'Ambiguous',tr:'Belirsiz / Muğlak',ex:'His answer was deliberately ambiguous.',lv:'B2',mastery:90},
+    {w:'Eloquent',tr:'Etkileyici / Güzel Konuşan',ex:'She gave an eloquent speech.',lv:'B2',mastery:75},
+    {w:'Resilience',tr:'Dayanıklılık',ex:'Resilience is key to success.',lv:'B2',mastery:95},
+    {w:'Melancholy',tr:'Hüzün / Melankon',ex:'A sense of melancholy filled the room.',lv:'B1',mastery:70},
+    {w:'Perseverance',tr:'Azim / Kararlılık',ex:'Success requires perseverance.',lv:'B1',mastery:88},
+    {w:'Whimsical',tr:'Tuhaf / Fantastik',ex:'She had a whimsical sense of humor.',lv:'C1',mastery:45},
+    {w:'Nostalgia',tr:'Özlem / Nostalji',ex:'The song filled him with nostalgia.',lv:'B1',mastery:99},
+    {w:'Precarious',tr:'Tehlikeli / Güvensiz',ex:'He was in a precarious situation.',lv:'C1',mastery:30},
+    {w:'Tenacious',tr:'İnatçı / Azimli',ex:'She was tenacious in her pursuit.',lv:'C1',mastery:55},
+    {w:'Benevolent',tr:'İyiliksever',ex:'A benevolent smile crossed his face.',lv:'B2',mastery:65},
+  ],
+  de:[
+    {w:'Wanderlust',tr:'Gezme Arzusu',ex:'Wanderlust trieb ihn in ferne Länder.',lv:'B1',mastery:80},
+    {w:'Fernweh',tr:'Uzak Yerlere Özlem',ex:'Fernweh ist ein typisch deutsches Gefühl.',lv:'B2',mastery:55},
+    {w:'Gemütlichkeit',tr:'Sıcaklık / Huzur',ex:'Das Café hat eine tolle Gemütlichkeit.',lv:'B1',mastery:70},
+    {w:'Schadenfreude',tr:'Başkasının Acısından Zevk',ex:'Schadenfreude ist keine gute Eigenschaft.',lv:'B2',mastery:65},
+    {w:'Weltanschauung',tr:'Dünya Görüşü',ex:'Seine Weltanschauung ist sehr komplex.',lv:'C1',mastery:40},
+    {w:'Verschlimmbessern',tr:'Daha Kötü Yapmak',ex:'Er hat alles verschlimmbessert.',lv:'C1',mastery:30},
+  ],
+  fr:[
+    {w:'Dépaysement',tr:'Yabancılık Hissi',ex:'Le dépaysement peut être libérateur.',lv:'B2',mastery:60},
+    {w:'Flâneur',tr:'Amaçsızca Gezen',ex:'Il est un vrai flâneur parisien.',lv:'B1',mastery:75},
+    {w:'Retrouvailles',tr:'Kavuşma / Yeniden Buluşma',ex:'Les retrouvailles étaient émouvantes.',lv:'B2',mastery:45},
+    {w:'Bricolage',tr:'Kendin Yap',ex:'Il aime le bricolage le weekend.',lv:'A1',mastery:95},
+  ],
+  es:[
+    {w:'Madrugada',tr:'Gecenin Sonu / Şafak',ex:'Llegamos a la madrugada.',lv:'A1',mastery:85},
+    {w:'Sobremesa',tr:'Yemekten Sonra Sohbet',ex:'La sobremesa duró horas.',lv:'B1',mastery:70},
+    {w:'Añoranza',tr:'Özlem',ex:'La añoranza por su tierra era grande.',lv:'B2',mastery:50},
+    {w:'Trasnochar',tr:'Gece Boyunca Uyumamak',ex:'Trasnoché estudiando para el examen.',lv:'B1',mastery:60},
+  ],
+  ja:[
+    {w:'木漏れ日',tr:'Yaprak Arası Güneş Işığı',ex:'Komorebi brightens the forest floor.',lv:'B1',mastery:75},
+    {w:'侘寂',tr:'Kusurlu Güzellik',ex:'Wabi-sabi is a Japanese aesthetic.',lv:'B2',mastery:55},
+    {w:'木枯らし',tr:'Soğuk Sonbahar Rüzgarı',ex:'Kogarashi signals winter is near.',lv:'B1',mastery:65},
+    {w:'物の哀れ',tr:'Şeylerin Hüznü',ex:'Mono no aware is seen in haiku.',lv:'C1',mastery:40},
+  ]
+};
+
+const PRON_WORDS = {
+  en:[
+    {w:'Ambiguous',ph:'/æmˈbɪɡjuəs/',mn:'Belirsiz, muğlak'},
+    {w:'Serendipity',ph:'/ˌsɛrənˈdɪpɪti/',mn:'Mutlu tesadüf'},
+    {w:'Euphoria',ph:'/juːˈfɔːriə/',mn:'Coşku, neşe patlaması'},
+    {w:'Melancholy',ph:'/ˈmɛlənkɒli/',mn:'Hüzün, melankon'},
+    {w:'Resilience',ph:'/rɪˈzɪliəns/',mn:'Dayanıklılık'},
+  ]
+};
+
+const LEADERBOARD = [
+  {name:'Zeynep K.',pts:2840,av:'👩‍💻',delta:'+180'},
+  {name:'Ahmet Y.',pts:2710,av:'👨‍🎓',delta:'+155'},
+  {name:'Sen',pts:1240,av:'⭐',delta:'+90',me:true},
+  {name:'Selin M.',pts:1190,av:'👩‍🎨',delta:'+75'},
+  {name:'Mert D.',pts:980,av:'👨‍💼',delta:'+60'},
+  {name:'Elif Ö.',pts:870,av:'👩‍🔬',delta:'+45'},
+  {name:'Can B.',pts:740,av:'🧑‍🎤',delta:'+30'},
+];
+
+let currentLang = 'en';
+function getVocab(){ return VOCAB[currentLang] || VOCAB.en; }
+function changeAppLang(){ currentLang = document.getElementById('appLang').value; }
+
+// ═══════════════════════════════
+// INIT APP
+// ═══════════════════════════════
+function initApp(){
+  renderDash();
+  initFC();
+  initQuiz();
+  initPron();
+  renderVocab();
+  renderLbFull();
+}
+
+// ═══════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════
+function renderDash(){
+  const days=['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];
+  const vals=[55,70,40,85,60,90,75];
+  const bars=document.getElementById('act-bars');
+  if(!bars) return;
+  bars.innerHTML=days.map((d,i)=>`
+    <div class="act-day">
+      <div class="act-bar ${i<6?'active':''}" style="height:${vals[i]}%"></div>
+      <div class="act-label">${d}</div>
+    </div>
+  `).join('');
+
+  const lb=document.getElementById('lb-mini');
+  if(lb) lb.innerHTML = LEADERBOARD.slice(0,5).map((u,i)=>`
+    <div class="lb-item">
+      <div class="lb-rank ${i===0?'gold':i===1?'silver':i===2?'bronze':''}">${i+1}</div>
+      <div class="lb-avatar">${u.av}</div>
+      <div class="lb-name" style="${u.me?'color:var(--gold)':''}">${u.name}${u.me?' (Sen)':''}</div>
+      <div class="lb-pts">${u.pts} XP</div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════
+// FLASHCARD
+// ═══════════════════════════════
+let fcIdx=0, fcFlipped=false;
+
+function initFC(){
+  fcIdx=0; fcFlipped=false;
+  loadFC();
+}
+
+function loadFC(){
+  const vocab=getVocab();
+  const w=vocab[fcIdx%vocab.length];
+  document.getElementById('fcWord').textContent=w.w;
+  document.getElementById('fcTr').textContent=w.tr;
+  document.getElementById('fcEx').textContent=`"${w.ex}"`;
+  document.getElementById('fcProgText').textContent=`${(fcIdx%vocab.length)+1} / ${vocab.length}`;
+  document.getElementById('fcProgFill').style.width=`${((fcIdx%vocab.length)+1)/vocab.length*100}%`;
+  const fc=document.getElementById('fc3d');
+  fc.classList.remove('flipped'); fcFlipped=false;
+  document.getElementById('fcRateRow').style.display='none';
+  document.getElementById('fcFlipRow').style.display='block';
+  document.getElementById('fcLangTag').textContent=
+    {en:'İngilizce',de:'Almanca',fr:'Fransızca',es:'İspanyolca',ja:'Japonca'}[currentLang]||'İngilizce';
+}
+
+function flipFC(){
+  const fc=document.getElementById('fc3d');
+  fcFlipped=!fcFlipped;
+  fc.classList.toggle('flipped',fcFlipped);
+  document.getElementById('fcRateRow').style.display=fcFlipped?'block':'none';
+  document.getElementById('fcFlipRow').style.display=fcFlipped?'none':'block';
+}
+
+function rateFC(r){ fcIdx++; loadFC(); }
+
+// ═══════════════════════════════
+// QUIZ
+// ═══════════════════════════════
+let qIdx=0,qCorrect=0,qWrong=0,qAnswered=false,qTimer=null,qTime=15;
+
+function initQuiz(){
+  qIdx=0;qCorrect=0;qWrong=0;
+  document.getElementById('qCorrect').textContent=0;
+  document.getElementById('qWrong').textContent=0;
+  loadQ();
+}
+
+function loadQ(){
+  const vocab=getVocab();
+  if(qIdx>=5){
+    document.getElementById('qWord').textContent='🎉';
+    document.getElementById('qOpts').innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:24px">
+      <div style="font-family:'Playfair Display',serif;font-size:36px;font-weight:700;color:var(--gold);margin-bottom:8px">${qCorrect}/5</div>
+      <div style="color:var(--text2);margin-bottom:20px">${qCorrect>=4?'Harika!':'İyi iş!'} ${qCorrect>=4?'🌟':'💪'}</div>
+      <button onclick="initQuiz()" style="padding:12px 28px;background:var(--gold);border:none;border-radius:10px;color:var(--bg);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Tekrar Oyna</button>
+    </div>`;
+    clearInterval(qTimer);
+    return;
+  }
+  clearInterval(qTimer);
+  qTime=15; qAnswered=false;
+  updateTimer();
+  qTimer=setInterval(()=>{
+    qTime--;updateTimer();
+    if(qTime<=0){clearInterval(qTimer);autoFail();}
+  },1000);
+
+  const correct=vocab[qIdx%vocab.length];
+  const others=vocab.filter((_,i)=>i!==qIdx%vocab.length).sort(()=>Math.random()-.5).slice(0,3);
+  const opts=[...others,correct].sort(()=>Math.random()-.5);
+  const letters=['A','B','C','D'];
+
+  document.getElementById('qWord').textContent=correct.w;
+  document.getElementById('qMeta').textContent=`${qIdx+1} / 5`;
+  document.getElementById('qProgFill').style.width=`${(qIdx/5)*100}%`;
+
+  document.getElementById('qOpts').innerHTML=opts.map((o,i)=>`
+    <button class="qopt" onclick="answerQ(this,'${o.tr.replace(/'/g,"\\'")}','${correct.tr.replace(/'/g,"\\'")}')">
+      <span class="qopt-letter">${letters[i]}</span>${o.tr}
+    </button>
+  `).join('');
+}
+
+function updateTimer(){
+  const el=document.getElementById('qTimer');
+  el.textContent=qTime;
+  el.classList.toggle('urgent',qTime<=5);
+}
+
+function autoFail(){
+  if(qAnswered) return; qAnswered=true;
+  qWrong++; document.getElementById('qWrong').textContent=qWrong;
+  const btns=document.querySelectorAll('.qopt');
+  const vocab=getVocab();
+  const correct=vocab[qIdx%vocab.length].tr;
+  btns.forEach(b=>{ if(b.textContent.includes(correct)) b.classList.add('correct'); b.disabled=true; });
+  qIdx++; setTimeout(loadQ,1200);
+}
+
+function answerQ(btn,chosen,correct){
+  if(qAnswered) return; qAnswered=true; clearInterval(qTimer);
+  if(chosen===correct){ btn.classList.add('correct'); qCorrect++; document.getElementById('qCorrect').textContent=qCorrect; }
+  else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('.qopt').forEach(b=>{if(b.textContent.includes(correct)) b.classList.add('correct');});
+    qWrong++; document.getElementById('qWrong').textContent=qWrong;
+  }
+  document.querySelectorAll('.qopt').forEach(b=>b.disabled=true);
+  qIdx++; setTimeout(loadQ,1100);
+}
+
+// ═══════════════════════════════
+// PRONUNCIATION
+// ═══════════════════════════════
+let pronIdx=0,micOn=false,micTimer=null;
+
+function initPron(){
+  pronIdx=0;
+  const words=PRON_WORDS[currentLang]||PRON_WORDS.en;
+  renderWaveform();
+  renderPronNav(words);
+  loadPronWord(words,0);
+}
+
+function renderWaveform(){
+  const wf=document.getElementById('waveform');
+  if(!wf) return;
+  wf.innerHTML=Array.from({length:28},(_,i)=>`<div class="wb" id="wb${i}"></div>`).join('');
+}
+
+function renderPronNav(words){
+  const nav=document.getElementById('pronWordNav');
+  if(!nav) return;
+  nav.innerHTML=words.map((w,i)=>`<span class="pron-word-chip ${i===0?'active':''}" onclick="selectPronWord(${i})">${w.w}</span>`).join('');
+}
+
+function selectPronWord(i){
+  pronIdx=i;
+  const words=PRON_WORDS[currentLang]||PRON_WORDS.en;
+  loadPronWord(words,i);
+  document.querySelectorAll('.pron-word-chip').forEach((c,j)=>c.classList.toggle('active',j===i));
+}
+
+function loadPronWord(words,i){
+  const w=words[i%words.length];
+  document.getElementById('pronWord').textContent=w.w;
+  document.getElementById('pronPhon').textContent=w.ph;
+  document.getElementById('pronMean').textContent=w.mn;
+  document.getElementById('pronScoreBox').classList.remove('show');
+  stopMic();
+}
+
+function toggleMic(){
+  if(micOn) stopMic(); else startMic();
+}
+
+function startMic(){
+  micOn=true;
+  const btn=document.getElementById('micRing');
+  btn.classList.add('rec'); btn.textContent='⏹';
+  document.querySelectorAll('.wb').forEach(b=>b.classList.add('pulse'));
+  micTimer=setTimeout(()=>stopMicScore(),2800);
+}
+
+function stopMic(){
+  micOn=false; clearTimeout(micTimer);
+  const btn=document.getElementById('micRing');
+  if(btn){btn.classList.remove('rec'); btn.textContent='🎤';}
+  document.querySelectorAll('.wb').forEach(b=>b.classList.remove('pulse'));
+}
+
+function stopMicScore(){
+  stopMic();
+  const score=72+Math.floor(Math.random()*27);
+  const sb=document.getElementById('pronScoreBox');
+  document.getElementById('pronBigScore').textContent=score;
+  const label=score>=90?'/ 100 — Mükemmel! 🎉':score>=80?'/ 100 — Çok İyi! 👏':score>=70?'/ 100 — İyi! Biraz daha pratik 💪':'/ 100 — Devam et! 🔄';
+  document.getElementById('pronScoreLabel').textContent=label;
+  const tips=score>=90?['Neredeyse native!','Vurgu harika','Akıcılık mükemmel']:score>=75?['Sesli harfleri uzat','Vurguyu kontrol et','Akıcılık iyi']:['Daha yavaş söyle','Fonetikleri incele','Tekrar dene'];
+  document.getElementById('pronTips').innerHTML=tips.map(t=>`<span class="pron-tip">${t}</span>`).join('');
+  sb.classList.add('show');
+}
+
+// ═══════════════════════════════
+// AI CHAT
+// ═══════════════════════════════
+let chatMode='conversation';
+const corrections=[
+  ['I goed','I went'],['He don\'t','He doesn\'t'],['She is more better','She is better'],
+  ['I have saw','I have seen'],['They was','They were'],
+];
+const aiReplies=[
+  m=>`Great! Your sentence is clear. Let me add: in natural English, you might say it a bit differently — but well done! 👍 What else is on your mind?`,
+  m=>`Interesting point! I noticed a small thing — but overall your message came through perfectly. Keep practicing! What's next?`,
+  m=>`I love your enthusiasm! Your vocabulary choice is solid. Try using a connector like "however" or "moreover" next time to sound even more fluent.`,
+  m=>`Perfect construction! 🌟 That was a really natural sentence. Challenge: can you say the same thing in the past perfect tense?`,
+  m=>`Good effort! One small tip: in formal writing, avoid contractions like "don't" — use "do not" instead. In casual speech, contractions are totally fine!`,
+];
+
+function setMode(el,mode){
+  document.querySelectorAll('.mode-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  chatMode=mode;
+  const msgs={conversation:'Sohbet modundayız. Herhangi bir konuda konuşabilirsin.',grammar:'Dilbilgisi modundayız. Cümlelerini analiz edeceğim.',debate:'Tartışma modundayız. Bir konu seç, karşıt görüşler üretelim.'};
+  addChatMsg(msgs[mode]||msgs.conversation,'ai',false);
+}
+
+function chatKey(e){
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();}
+}
+
+function useChip(t){
+  document.getElementById('chatInput').value=t;
+  sendChat();
+}
+
+function sendChat(){
+  const inp=document.getElementById('chatInput');
+  const txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  document.getElementById('quickChips').style.display='none';
+  addChatMsg(txt,'user',false);
+
+  // Check for common grammar error to show correction
+  let correction=null;
+  for(const [err,fix] of corrections){
+    if(txt.toLowerCase().includes(err.toLowerCase())){
+      correction={err,fix};break;
+    }
+  }
+
+  // typing indicator
+  const tid='t'+Date.now();
+  const td=document.createElement('div');
+  td.className='chat-msg ai'; td.id=tid;
+  td.innerHTML='<div class="chat-bubble"><div class="typing-dots"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div></div>';
+  document.getElementById('msgBox').appendChild(td);
+  scrollMsgs();
+
+  setTimeout(()=>{
+    document.getElementById(tid)?.remove();
+    const reply=aiReplies[Math.floor(Math.random()*aiReplies.length)](txt);
+    addChatMsg(reply,'ai',correction);
+    scrollMsgs();
+  },1200+Math.random()*800);
+}
+
+function addChatMsg(text,role,correction){
+  const now=new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+  const div=document.createElement('div');
+  div.className=`chat-msg ${role}`;
+  let html=`<div class="chat-bubble">${text}</div>`;
+  if(correction){
+    html+=`<div class="chat-correction">⚠ Küçük düzeltme: <strong>"${correction.err}"</strong> → <span class="correct">"${correction.fix}"</span></div>`;
+  }
+  html+=`<div class="chat-ts">${now}</div>`;
+  div.innerHTML=html;
+  document.getElementById('msgBox').appendChild(div);
+  scrollMsgs();
+}
+
+function scrollMsgs(){
+  const b=document.getElementById('msgBox');
+  if(b) b.scrollTop=b.scrollHeight;
+}
+
+// ═══════════════════════════════
+// VOCABULARY
+// ═══════════════════════════════
+let vocabFilter='all';
+
+function filterVocab(btn,f){
+  document.querySelectorAll('.vfilt-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  vocabFilter=f;
+  renderVocab();
+}
+
+function renderVocab(){
+  const vocab=getVocab();
+  const filtered=vocabFilter==='all'?vocab:vocab.filter(v=>v.lv.toLowerCase()===vocabFilter);
+  const grid=document.getElementById('vocabGrid');
+  if(!grid) return;
+  grid.innerHTML=filtered.map(v=>`
+    <div class="vocab-card">
+      <div class="vc-word">${v.w}</div>
+      <div class="vc-tr">${v.tr}</div>
+      <div class="vc-ex">"${v.ex}"</div>
+      <div class="vc-meta">
+        <span class="vc-level" style="font-size:10px;padding:3px 8px;border-radius:4px;background:rgba(201,168,76,0.1);color:var(--gold);font-family:'JetBrains Mono',monospace">${v.lv}</span>
+        <div class="vc-bar"><div class="vc-bar-fill" style="width:${v.mastery}%"></div></div>
+        <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace">${v.mastery}%</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════
+// LEADERBOARD
+// ═══════════════════════════════
+function renderLbFull(){
+  const el=document.getElementById('lbFull');
+  if(!el) return;
+  const medals=['🥇','🥈','🥉'];
+  el.innerHTML=LEADERBOARD.map((u,i)=>`
+    <div class="lb-item" style="${u.me?'background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.2);border-radius:10px':''}">
+      <div class="lb-rank ${i===0?'gold':i===1?'silver':i===2?'bronze':''}">${i<3?medals[i]:i+1}</div>
+      <div class="lb-avatar">${u.av}</div>
+      <div style="flex:1">
+        <div class="lb-name" style="${u.me?'color:var(--gold)':''}">${u.name}${u.me?' (Sen)':''}</div>
+        <div style="font-size:11px;color:var(--teal);font-family:'JetBrains Mono',monospace">${u.delta} bu hafta</div>
+      </div>
+      <div>
+        <div class="lb-pts">${u.pts} XP</div>
+        <div class="lb-bar" style="margin-top:4px"><div class="lb-bar-fill" style="width:${(u.pts/2840*100)}%"></div></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════
+// FAQ
+// ═══════════════════════════════
+function toggleFaq(btn){
+  const item=btn.closest('.faq-item');
+  const isOpen=item.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(i=>i.classList.remove('open'));
+  if(!isOpen) item.classList.add('open');
+}
+
+// ═══════════════════════════════
+// COUNTER ANIMATION
+// ═══════════════════════════════
+function animCount(el,target,dur=1500){
+  let start=0,startTime=null;
+  const step=ts=>{
+    if(!startTime) startTime=ts;
+    const prog=Math.min((ts-startTime)/dur,1);
+    el.textContent=Math.floor(prog*target).toLocaleString()+(target>=1000?'+':'');
+    if(prog<1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+// Animate hero stats on load
+window.addEventListener('load',()=>{
+  document.querySelectorAll('.hero-stat-num').forEach(el=>{
+    const txt=el.textContent;
+    const num=parseInt(txt.replace(/[^0-9]/g,''));
+    if(num>0) setTimeout(()=>animCount(el,num),400);
+  });
+});
+</script>
+</body>
+</html>
